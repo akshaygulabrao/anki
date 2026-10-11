@@ -18,6 +18,14 @@ class _MacOSHelper:
         self._dll = CDLL(str(path))
         self._dll.system_is_dark.restype = c_bool
 
+    def install_qt_accessibility_guard(self, qt_version: str) -> bool:
+        guard = getattr(self._dll, "install_qt_accessibility_guard", None)
+        if guard is None:
+            return False
+        guard.argtypes = [c_char_p]
+        guard.restype = c_bool
+        return guard(qt_version.encode("ascii"))
+
     def system_is_dark(self) -> bool:
         return self._dll.system_is_dark()
 

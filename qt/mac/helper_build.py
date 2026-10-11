@@ -9,13 +9,14 @@ from pathlib import Path
 if len(sys.argv) == 1:
     script_dir = Path(__file__).parent
     out_dylib = script_dir / "anki_mac_helper" / "libankihelper.dylib"
-    src_files = list(script_dir.glob("*.swift"))
+    src_files = [*script_dir.glob("*.swift"), *script_dir.glob("*.m")]
 else:
     out_dylib, *src_files = sys.argv[1:]
 
 out_dylib = Path(out_dylib)
 out_dir = out_dylib.parent.resolve()
-src_dir = Path(src_files[0]).parent.resolve()
+src_files = [Path(file).resolve() for file in src_files]
+out_dir.mkdir(parents=True, exist_ok=True)
 
 # Build for both architectures
 architectures = ["arm64", "x86_64"]
@@ -35,15 +36,31 @@ for arch in architectures:
         "ankihelper",
         "-O",
     ]
-    if isinstance(src_files[0], Path):
-        args.extend(src_files)
-    else:
-        args.extend(src_dir / Path(file).name for file in src_files)
+    objects = []
+    for source in src_files:
+        if source.suffix == ".m":
+            obj = out_dir / f"{source.stem}_{arch}.o"
+            subprocess.run(
+                [
+                    "clang",
+                    "-target",
+                    target,
+                    "-fno-objc-arc",
+                    "-O2",
+                    "-c",
+                    str(source),
+                    "-o",
+                    str(obj),
+                ],
+                check=True,
+            )
+            objects.append(obj)
+    args.extend(file for file in src_files if file.suffix == ".swift")
+    args.extend(objects)
     args.extend(["-o", str(temp_out)])
     subprocess.run(args, check=True, cwd=out_dir)
-
-# Ensure output directory exists
-out_dir.mkdir(parents=True, exist_ok=True)
+    for obj in objects:
+        obj.unlink()
 
 # Create universal binary
 lipo_args = ["lipo", "-create", "-output", str(out_dylib)] + [

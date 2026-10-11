@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Copyright: Ankitects Pty Ltd and contributors
+# License: GNU AGPL, version 3 or later; http://www.gnu.org/licenses/agpl.html
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# Build the fork, then install its native helper into the development venv.
+# The helper does not need to be published to PyPI to run this fork.
+./ninja pylib qt
+out/pyenv/bin/python qt/mac/helper_build.py
+out/extracted/uv/uv build --python "$PWD/out/pyenv/bin/python" \
+    --wheel qt/mac --out-dir out/mac-helper-wheels
+out/extracted/uv/uv pip install --python out/pyenv/bin/python \
+    --reinstall out/mac-helper-wheels/anki_mac_helper-0.1.2-py3-none-any.whl
+
+export ANKI_MACOS_ACCESSIBILITY_GUARD=1
+exec out/pyenv/bin/python tools/run.py "$@"

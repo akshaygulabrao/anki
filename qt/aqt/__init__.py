@@ -757,6 +757,10 @@ def _run(argv: list[str] | None = None, exec: bool = True) -> AnkiApp | None:
     QCoreApplication.setApplicationName("Anki")
     QGuiApplication.setDesktopFileName("anki")
     app = AnkiApp(argv, safe_mode)
+    if is_mac:
+        from aqt._macos_helper import install_qt_accessibility_guard
+
+        install_qt_accessibility_guard(qVersion())
     if app.secondInstance():
         # we've signaled the primary instance, so we should close
         return None
