@@ -28,7 +28,6 @@ select a row in Browse, and inspect it with an authorized accessibility client.
 Confirm that selected cells remain exposed and that changing the selection,
 search results, columns, and closing Browse do not crash.
 
-
 To run this fork from source with its local helper, first install the usual
 Anki development requirements, then run:
 
@@ -48,8 +47,20 @@ interface destruction. The Qt 6.9.1 baseline faults at `libqcocoa + 0x812b0`,
 the same offset observed in the Anki crashes tracked in
 [ankitects/anki#5800](https://github.com/ankitects/anki/issues/5800).
 
-The 13 Python helper/startup tests and Ruff checks pass. A disposable Anki
-26.9.3 / Qt 6.11.2 runtime, using this fork’s modified startup/helper modules
+The full source check suite passes with Rust 1.99.0 and Python 3.13.13:
+766 Rust tests, 184 core Python tests, 143 Qt tests (including the nine new guard
+tests), 81 tool tests, and 70 web tests. Formatting, Clippy, and Python type
+checks also pass. For this fork, the local run uses Anki's existing author
+allowlist:
+
+```sh
+CONTRIBUTORS_BYPASS_EMAILS=aksgula22@gmail.com ./ninja check
+```
+
+The source launcher (`tools/run-macos-accessibility --help`) also passed,
+using the locally built helper 0.1.2.
+
+A disposable Anki 26.9.3 / Qt 6.11.2 runtime, using this fork’s modified startup/helper modules
 with the released backend and generated assets, also survived Browse accessibility
 reads, changing a selected row, an empty search and restoring results, and a
 fullscreen transition. **The workaround is experimental:** some table cell
@@ -58,5 +69,4 @@ object warnings. A broader native 2→3→2→4 column sequence also returned th
 selected cells for the final four-column table. These additional accessibility
 problems remain unresolved; the guard addresses the reproduced ownership crash.
 VoiceOver and x86_64 execution have not been validated. Both helper architectures
-compile, but the local full `./ninja check` is blocked by Rust 1.87.0 (the repo
-pins 1.99.0). Keep using a disposable profile for evaluation.
+compile. Keep using a disposable profile for evaluation.
